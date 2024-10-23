@@ -1,4 +1,5 @@
-
+// Tradutor Roberto Moriya
+import React, { useState, useEffect } from 'react';
 
 function App() {
   const languages = [
@@ -10,8 +11,40 @@ function App() {
     { code: "pt-br", name: "Português" },
   ];
 
-  let isLoading = false
-  let error = ""
+  const [texto, setTexto] = useState('');  
+  const [textoTraduzido, setTraduzido] = useState('');  
+  const [idiomaOrigem, setIdiomaOrigem] = useState('pt-br');  
+  const [idiomaDestino, setIdiomaDestino] = useState('en-us');  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');  
+
+  const TraduzirTexto = async () => {
+    if (!texto) return; 
+    setIsLoading(true);
+    try {
+      const resposta = await fetch(`
+        https://api.mymemory.translated.net/get?q=${encodeURIComponent(texto)}&langpair=${idiomaOrigem}|${idiomaDestino}`
+      );
+      const dados = await resposta.json();
+      setTraduzido(dados.responseData.translatedText);
+      setError('');  
+    } catch (erro) {
+      setError(erro.message);  
+    } finally {
+      setIsLoading(false); 
+    }
+  };
+
+  const inverterIdiomas = () => {
+      let guardar = idiomaOrigem; // armazenar 
+      setIdiomaOrigem(idiomaDestino);  
+      setIdiomaDestino(guardar);       
+  }
+
+  // Ativado toda vez que muda algo no texto, no idioma de origem ou no destino.
+  useEffect(() => {
+    TraduzirTexto();  
+  }, [texto, idiomaOrigem, idiomaDestino]);  
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -26,13 +59,16 @@ function App() {
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <select
               className="text-sm text-textColor bg-transparent border-none focus:outline-none cursor-pointer"
-              value="en-us"
+              onChange={(e) => setIdiomaOrigem(e.target.value)}
+              value={idiomaOrigem}
             >
-              <option value="pt-br">Português</option>
-              <option value="en-us">Inglês</option>
+              {languages.map((idioma) => (
+                <option key={idioma.code} value={idioma.code}>
+                  {idioma.name} 
+                </option>
+              ))}
             </select>
-
-            <button className="p-2 rounded-full hover:bg-gray-100 outline-none">
+            <button className="p-2 rounded-full hover:bg-gray-100 outline-none" onClick={inverterIdiomas}>
               <svg
                 className="w-5 h-5 text-headerColor"
                 fill="none"
@@ -48,13 +84,16 @@ function App() {
                 />
               </svg>
             </button>
-
             <select
               className="text-sm text-textColor bg-transparent border-none focus:outline-none cursor-pointer"
-              value="pt-br"
+              onChange={(e) => setIdiomaDestino(e.target.value)}
+              value={idiomaDestino}
             >
-              <option value="pt-br">Português</option>
-              <option value="en-us">Inglês</option>
+              {languages.map((idioma) => (
+                <option key={idioma.code} value={idioma.code}>
+                  {idioma.name} 
+                </option>
+              ))}
             </select>
           </div>
 
@@ -62,7 +101,9 @@ function App() {
             <div className="p-4">
               <textarea
                 className="w-full h-40 text-lg text-textColor bg-transparent resize-none border-none outline-none"
-                placeholder="Digite seu texto..."                
+                placeholder="Digite seu texto..." 
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
               ></textarea>
             </div>
 
@@ -72,7 +113,7 @@ function App() {
                   <div className="animate-spin rounded-full h-8 w-8 border-blue-500 border-t-2"></div>
                 </div>
               ) : (
-                <p className="text-lg text-textColor">Colocar aqui o texto traduzido</p>
+                <p className="text-lg text-textColor">{textoTraduzido}</p>
               )}
             </div>
           </div>
